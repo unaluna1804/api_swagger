@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
     }
 });
 
-app.use('/uploads', express.static('uploads'));
+app.use("/images", express.static("public/images"));
 
 // Routes
 app.use('/', userRoutes);

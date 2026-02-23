@@ -5,7 +5,8 @@ const postController = require('../controllers/post_controller');
 const authenticateToken = require('../middlewares/auth'); // kalau sudah ada
 
 const storage = multer.diskStorage({
-    destination: 'uploads/',
+    destination: (req,file,cb)=> cb(null,"public/images"),
+    
     filename: (req, file, cb) => {
         cb(null, Date.now() + '-' + file.originalname);
     }
