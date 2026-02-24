@@ -1,38 +1,30 @@
-const Category = require('../models/category');
-const Joi = require('joi');
-const response = require('../utils/response');
+const pool = require('../config/db');
 
-const schema = Joi.object({
-  nama: Joi.string().min(3).required()
-});
-
-exports.getAll = async (req,res)=>{
-  const data = await Category.getAll();
-  response.success(res, data.rows);
+exports.getAll = () => {
+  return pool.query('SELECT * FROM categories ORDER BY id DESC');
 };
 
-exports.getById = async (req,res)=>{
-  const data = await Category.getById(req.params.id);
-  response.success(res, data.rows[0]);
+exports.getById = (id) => {
+  return pool.query('SELECT * FROM categories WHERE id = $1', [id]);
 };
 
-exports.create = async (req,res)=>{
-  const { error } = schema.validate(req.body);
-  if(error) return res.status(400).json({message:error.message});
-
-  const data = await Category.create(req.body.nama);
-  response.success(res, data.rows[0], "Category berhasil dibuat");
+exports.create = (nama) => {
+  return pool.query(
+    'INSERT INTO categories(nama) VALUES($1) RETURNING *',
+    [nama]
+  );
 };
 
-exports.update = async (req,res)=>{
-  const { error } = schema.validate(req.body);
-  if(error) return res.status(400).json({message:error.message});
-
-  const data = await Category.update(req.params.id, req.body.nama);
-  response.success(res, data.rows[0], "Category berhasil diupdate");
+exports.update = (id, nama) => {
+  return pool.query(
+    'UPDATE categories SET nama=$1 WHERE id=$2 RETURNING *',
+    [nama, id]
+  );
 };
 
-exports.remove = async (req,res)=>{
-  await Category.remove(req.params.id);
-  response.success(res, null, "Category berhasil dihapus");
+exports.remove = (id) => {
+  return pool.query(
+    'DELETE FROM categories WHERE id=$1',
+    [id]
+  );
 };
