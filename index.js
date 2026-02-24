@@ -1,42 +1,58 @@
 require('dotenv').config();
+
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 
 const userRoutes = require('./routes/user_route');
-const swaggerDocument = require('./utils/swagger');
 const postRoutes = require('./routes/post_route');
+const categoryRoutes = require('./routes/category_route');
 
+const swaggerDocument = require('./utils/swagger');
 
 const app = express();
 const PORT = 3000;
 
+
+// ===============================
+// MIDDLEWARE
+// ===============================
+
 app.use(express.json());
 
-// Upload folder
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
-}
 
-const storage = multer.diskStorage({
-    destination: 'uploads/',
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
+// ===============================
+// STATIC FILE (UNTUK AKSES GAMBAR)
+// ===============================
 
-app.use("/images", express.static("public/images"));
+app.use('/images', express.static('public/images'));
 
-// Routes
+
+// ===============================
+// ROUTES
+// ===============================
+
+// Auth / User
 app.use('/', userRoutes);
+
+// Posts
 app.use('/', postRoutes);
 
-// Swagger (kalau mau dipisah nanti bisa)
+// Categories (pakai prefix /api biar rapi)
+app.use('/api', categoryRoutes);
+
+
+// ===============================
+// SWAGGER DOCUMENTATION
+// ===============================
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+
+// ===============================
+// RUN SERVER
+// ===============================
+
 app.listen(PORT, () => {
-    console.log(`🚀 Server: http://localhost:${PORT}`);
-    console.log(`📘 Swagger: http://localhost:${PORT}/api-docs`);
+    console.log(`🚀 Server running : http://localhost:${PORT}`);
+    console.log(`📘 Swagger docs  : http://localhost:${PORT}/api-docs`);
 });

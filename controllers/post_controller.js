@@ -33,23 +33,20 @@ exports.getById = async (req, res) => {
 
 
 // ================= CREATE =================
-exports.create = async (req, res) => {
+exports.create = async (req,res)=>{
+  const { judul, isi, category_id } = req.body;
+  const gambar = req.file ? req.file.filename : null;
 
-    const { judul, isi } = req.body;
-    const gambar = req.file ? req.file.filename : null;
+  const data = await Post.create(judul, isi, gambar, category_id);
 
-    const data = await Post.create(judul, isi, gambar);
+  const result = data.rows[0];
 
-    const result = data.rows[0];
+  if(result.gambar){
+    result.gambar_url = `http://localhost:3000/images/${result.gambar}`;
+  }
 
-    // tambah link gambar
-    if(result.gambar){
-        result.gambar_url = `http://localhost:3000/images/${result.gambar}`;
-    }
-
-    response.success(res, result, 'Post berhasil dibuat');
+  response.success(res, result, "Post berhasil dibuat");
 };
-
 
 // ================= UPDATE =================
 exports.update = async (req, res) => {
@@ -58,7 +55,7 @@ exports.update = async (req, res) => {
     const { judul, isi } = req.body;
     const gambar = req.file ? req.file.filename : null;
 
-    await Post.update(id, judul, isi, gambar);
+   await Post.update(id, judul, isi, gambar, category_id);
 
     response.success(res, null, 'Post berhasil diupdate');
 };
