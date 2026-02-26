@@ -1,88 +1,152 @@
 const Post = require('../models/post');
 const response = require('../utils/response');
-const fs = require('fs');
-const path = require('path');
-const sharp = require('sharp'); // Tambahan
-const minioClient = require('../config/minio'); // Tambahan
-const { v4: uuidv4 } = require('uuid'); // Tambahan
+const sharp = require('sharp');
+const minioClient = require('../config/minio');
+const { v4: uuidv4 } = require('uuid');
+
+const BASE_URL = "http://localhost:9000/posts"; // bisa pindah ke .env nanti
 
 // ================= GET ALL =================
 exports.getAll = async (req, res) => {
-    const data = await Post.getAll();
-    const result = data.rows.map(item => ({
-        ...item,
-        gambar_url: item.gambar ? `http://localhost:9000/posts/${item.gambar}` : null
-    }));
-    response.success(res, result);
+    try {
+        const data = await Post.getAll();
+
+        const result = data.rows.map(item => ({
+            ...item,
+            gambar: item.gambar ? `${BASE_URL}/${item.gambar}` : null
+        }));
+
+        response.success(res, result);
+    } catch (error) {
+        console.error("GET ALL ERROR:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
 };
 
 // ================= GET BY ID =================
 exports.getById = async (req, res) => {
-    const data = await Post.getById(req.params.id);
-    const item = data.rows[0];
-    if(item?.gambar){
-        item.gambar_url = `http://localhost:9000/posts/${item.gambar}`;
+    try {
+        const data = await Post.getById(req.params.id);
+        const item = data.rows[0];
+
+        if (!item) {
+            return res.status(404).json({
+                status: "error",
+                message: "Post tidak ditemukan"
+            });
+        }
+
+        item.gambar = item.gambar ? `${BASE_URL}/${item.gambar}` : null;
+
+        response.success(res, item);
+    } catch (error) {
+        console.error("GET BY ID ERROR:", error);
+        res.status(500).json({ status: "error", message: error.message });
     }
-    response.success(res, item);
 };
 
-// ================= CREATE (Integrasi MinIO) =================
+// ================= CREATE =================
 exports.create = async (req, res) => {
     try {
         const { judul, isi, category_id } = req.body;
+
+        if (!judul || !isi || !category_id) {
+            return res.status(400).json({
+                status: "error",
+                message: "Judul, isi, dan category_id wajib diisi"
+            });
+        }
+
         let gambarName = null;
 
         if (req.file) {
-            // 1. Proses gambar dengan Sharp
             const resized = await sharp(req.file.buffer)
-                .resize(800)
-                .jpeg({ quality: 80 })
+                .resize({ width: 800 })
+                .webp({ quality: 80 })
                 .toBuffer();
 
-            gambarName = uuidv4() + '.webp';
+            gambarName = uuidv4() + ".webp";
 
-            // 2. Upload ke MinIO
             await minioClient.putObject(
-                'posts', 
-                gambarName, 
-                resized, 
-                resized.length, 
-                { 'Content-Type': 'image/jpeg' }
+                "posts",
+                gambarName,
+                resized,
+                resized.length,
+                { "Content-Type": "image/webp" }
             );
         }
 
-        // 3. Simpan ke Database (tetap pakai fungsi Post.create kamu)
         const data = await Post.create(judul, isi, gambarName, category_id);
         const result = data.rows[0];
 
-        if (result.gambar) {
-            result.gambar_url = `http://localhost:9000/posts/${result.gambar}`;
-        }
+        result.gambar = result.gambar ? `${BASE_URL}/${result.gambar}` : null;
 
-        response.success(res, result, "Post berhasil dibuat dan disimpan ke MinIO");
+        response.success(res, result, "Post berhasil dibuat");
     } catch (error) {
-        console.error(error);
+        console.error("CREATE ERROR:", error);
         res.status(500).json({ status: "error", message: error.message });
     }
 };
 
 // ================= UPDATE =================
 exports.update = async (req, res) => {
-    const { id } = req.params;
-    const { judul, isi, category_id } = req.body; // tambahkan category_id jika perlu
-    const gambar = req.file ? req.file.filename : null; 
-    // Catatan: Jika update juga ingin ke MinIO, logikanya harus disamakan dengan Create
+    try {
+        const { id } = req.params;
+        const { judul, isi, category_id } = req.body;
 
-    await Post.update(id, judul, isi, gambar, category_id);
-    response.success(res, null, 'Post berhasil diupdate');
+        let gambarName = null;
+
+        if (req.file) {
+            const resized = await sharp(req.file.buffer)
+                .resize({ width: 800 })
+                .webp({ quality: 80 })
+                .toBuffer();
+
+            gambarName = uuidv4() + ".webp";
+
+            await minioClient.putObject(
+                "posts",
+                gambarName,
+                resized,
+                resized.length,
+                { "Content-Type": "image/webp" }
+            );
+        }
+
+        await Post.update(id, judul, isi, gambarName, category_id);
+
+        response.success(res, null, "Post berhasil diupdate");
+    } catch (error) {
+        console.error("UPDATE ERROR:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
 };
 
 // ================= DELETE =================
 exports.remove = async (req, res) => {
-    const { id } = req.params;
-    const post = await Post.getById(id);
+    try {
+        const { id } = req.params;
 
-    // Jika ingin hapus di MinIO juga gunakan minioClient.removeObject
-    await Post.remove(id);
-    response.success(res, null, 'Post berhasil dihapus');
+        const post = await Post.getById(id);
+        const item = post.rows[0];
+
+        if (!item) {
+            return res.status(404).json({
+                status: "error",
+                message: "Post tidak ditemukan"
+            });
+        }
+
+        // Hapus file di MinIO kalau ada
+        if (item.gambar) {
+            await minioClient.removeObject("posts", item.gambar);
+        }
+
+        await Post.remove(id);
+
+        response.success(res, null, "Post berhasil dihapus");
+    } catch (error) {
+        console.error("DELETE ERROR:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
 };
