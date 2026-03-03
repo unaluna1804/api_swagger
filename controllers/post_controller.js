@@ -94,8 +94,16 @@ exports.update = async (req, res) => {
         const { id } = req.params;
         const { judul, isi, category_id } = req.body;
 
-        let gambarName = null;
+        // 1. Ambil data lama dulu buat dapetin nama gambar lama
+        const oldData = await Post.getById(id);
+        if (oldData.rows.length === 0) {
+            return res.status(404).json({ status: "error", message: "Post tidak ditemukan" });
+        }
+        
+        // Gunakan gambar lama sebagai default
+        let gambarName = oldData.rows[0].gambar; 
 
+        // 2. Jika ada file baru, baru kita proses & ganti nama gambarnya
         if (req.file) {
             const resized = await sharp(req.file.buffer)
                 .resize({ width: 800 })
@@ -111,9 +119,15 @@ exports.update = async (req, res) => {
                 resized.length,
                 { "Content-Type": "image/webp" }
             );
+            
+            // Opsional: Hapus gambar lama dari MinIO biar gak nyampah
+            if (oldData.rows[0].gambar) {
+                await minioClient.removeObject("posts", oldData.rows[0].gambar);
+            }
         }
 
-        await Post.update(id, judul, isi, gambarName, category_id);
+        // 3. Kirim ke model. Pastikan category_id di-convert ke Number/Int
+        await Post.update(id, judul, isi, gambarName, Number(category_id));
 
         response.success(res, null, "Post berhasil diupdate");
     } catch (error) {
@@ -121,7 +135,6 @@ exports.update = async (req, res) => {
         res.status(500).json({ status: "error", message: error.message });
     }
 };
-
 // ================= DELETE =================
 exports.remove = async (req, res) => {
     try {

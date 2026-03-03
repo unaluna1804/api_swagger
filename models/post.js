@@ -19,17 +19,21 @@ exports.create = (judul, isi, gambar, category_id) => {
   );
 };
 
-exports.update = (id, judul, isi, gambar) => {
+exports.update = (id, judul, isi, gambar, category_id) => {
     if (gambar) {
+        // Jika ada gambar baru
         return pool.query(
-            'UPDATE posts SET judul=$1, isi=$2, gambar=$3 WHERE id=$4',
-            [judul, isi, gambar, id]
+            'UPDATE posts SET judul=$1, isi=$2, gambar=$3, category_id=$4 WHERE id=$5',
+            [judul, isi, gambar, category_id, id] // Sekarang pas 5 parameter!
+        );
+    } else {
+        // Jika TIDAK ada gambar baru (gambar tetap pakai yang lama)
+        // Tapi category_id TETAP harus diupdate di sini
+        return pool.query(
+            'UPDATE posts SET judul=$1, isi=$2, category_id=$3 WHERE id=$4',
+            [judul, isi, category_id, id] // Pas 4 parameter
         );
     }
-    return pool.query(
-        'UPDATE posts SET judul=$1, isi=$2 WHERE id=$3',
-        [judul, isi, id]
-    );
 };
 
 exports.remove = (id) => {

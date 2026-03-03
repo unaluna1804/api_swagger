@@ -1,30 +1,50 @@
-const pool = require('../config/db');
+const Category = require('../models/category');
 
-exports.getAll = () => {
-  return pool.query('SELECT * FROM categories ORDER BY id DESC');
+exports.getAll = async (req, res) => {
+  try {
+    const data = await Category.getAll();
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-exports.getById = (id) => {
-  return pool.query('SELECT * FROM categories WHERE id = $1', [id]);
+exports.getById = async (req, res) => {
+  try {
+    const data = await Category.getById(req.params.id);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-exports.create = (nama) => {
-  return pool.query(
-    'INSERT INTO categories(nama) VALUES($1) RETURNING *',
-    [nama]
-  );
+exports.create = async (req, res) => {
+  try {
+    const { nama } = req.body;
+    const data = await Category.create(nama);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-exports.update = (id, nama) => {
-  return pool.query(
-    'UPDATE categories SET nama=$1 WHERE id=$2 RETURNING *',
-    [nama, id]
-  );
+exports.update = async (req, res) => {
+  try {
+    const { nama } = req.body;
+    const data = await Category.update(req.params.id, nama);
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
-exports.remove = (id) => {
-  return pool.query(
-    'DELETE FROM categories WHERE id=$1',
-    [id]
-  );
+exports.remove = async (req, res) => {
+  try {
+    await Category.remove(req.params.id);
+    res.json({ message: "Berhasil dihapus" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
 };

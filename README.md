@@ -38,3 +38,9 @@ Proyek Back-end menggunakan Node.js, Express, dan PostgreSQL.
 - Sharp (High-performance Node.js Image Processing)
 - Multer (Middleware untuk handling multipart/form-data)
 - Swagger / OpenAPI (API Documentation)
+-React.js & Vite (Build tool & UI Library)
+- Tailwind CSS (Styling)
+-React Router Dom (Navigation)
+-Axios (HTTP Client)
+-React Query (Server State Management)
+
