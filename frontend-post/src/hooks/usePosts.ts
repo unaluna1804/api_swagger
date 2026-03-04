@@ -3,11 +3,14 @@ import api from "../lib/api";
 
 const API_URL = "/posts";
 
-export const usePosts = () => {
+// --- PERBAIKAN: Tambahkan parameter 'page' di sini ---
+export const usePosts = (page: number = 1) => {
   return useQuery({
-    queryKey: ["posts"],
+    // Tambahkan page ke dalam queryKey agar data refresh otomatis saat ganti halaman
+    queryKey: ["posts", page], 
     queryFn: async () => {
-      const res = await api.get(API_URL);
+      // Menambahkan query parameter ?page= ke URL API
+      const res = await api.get(`${API_URL}?page=${page}`);
       return res.data;
     },
   });
@@ -40,6 +43,11 @@ export const useCreatePost = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
+    // TIPS: Tambahkan onError di sini untuk Read Validation Message di form tambah
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Gagal membuat postingan";
+      alert(msg);
+    }
   });
 };
 
@@ -50,8 +58,6 @@ export const useUpdatePost = () => {
       const formData = new FormData();
       formData.append("judul", data.judul);
       formData.append("isi", data.isi);
-      
-      // PERBAIKAN: Ambil category_id dari data input, jangan diisi "1" terus!
       formData.append("category_id", String(data.category_id)); 
       
       if (data.gambar instanceof File) {
@@ -63,5 +69,9 @@ export const useUpdatePost = () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       alert("Berhasil update!");
     },
+    onError: (error: any) => {
+      const msg = error.response?.data?.message || "Gagal update postingan";
+      alert(msg);
+    }
   });
 };

@@ -19,7 +19,7 @@ function Sidebar() {
       {/* Judul Admin Panel dengan font tebal putih */}
       <div className="mb-10 pb-6 border-b-4 border-pink-800">
         <h2 className="text-2xl font-black text-white italic tracking-tighter">
-          ADMIN <span className="text-pink-300">PANEL</span>
+          MENU <span className="text-pink-300">ADMIN</span>
         </h2>
         <p className="text-[10px] font-black text-pink-200 uppercase tracking-[0.3em] mt-1">Dunia Kartun</p>
       </div>

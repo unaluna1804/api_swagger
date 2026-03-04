@@ -1,26 +1,31 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Login from "./pages/Login";
 import Categories from "./pages/Categories";
 import Dashboard from "./pages/Dashboard";
-import PostDetail from "./pages/PostDetail"; // Pastikan namanya konsisten
-import UserHome from "./pages/UserHome"; 
+import PostDetail from "./pages/PostDetail";
+import UserHome from "./pages/UserHome";
+import NotFound from "./pages/NotFound"; // Import file NotFound
+
+const ProtectedRoute = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return <Navigate to="/login" replace />;
+  return <Outlet />;
+};
 
 function App() {
   return (
     <Routes>
-      {/* HALAMAN USER (Bisa diakses tanpa login) */}
       <Route path="/" element={<UserHome />} />
-      
-      {/* Sekarang sudah konsisten: import PostDetail, panggil PostDetail */}
       <Route path="/post/:id" element={<PostDetail />} />
-
-      {/* HALAMAN ADMIN */}
       <Route path="/login" element={<Login />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/categories" element={<Categories />} />
 
-      {/* REDIRECT (Jika ngetik link asal, arahkan ke Home) */}
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/categories" element={<Categories />} />
+      </Route>
+
+      {/* 1. PAGE NOT FOUND: Jika rute tidak terdaftar, lari ke sini */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

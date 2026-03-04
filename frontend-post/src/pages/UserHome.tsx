@@ -1,11 +1,24 @@
+import { useState } from "react"; 
 import { usePosts } from "../hooks/usePosts";
 import { Link } from "react-router-dom";
 
 function UserHome() {
-  const { data: postsData, isLoading, isError } = usePosts();
+  const [currentPage, setCurrentPage] = useState(1);
+  // --- UBAH KE 9 AGAR GRID 3 KOLOM TERISI PENUH ---
+  const itemsPerPage = 9; 
 
-  // Ambil data posts dari response
+  const { data: postsData, isLoading, isError } = usePosts(currentPage);
   const posts = postsData?.data || (Array.isArray(postsData) ? postsData : []);
+
+  // Logika Pemotongan (Slice) Data
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  
+  // Ambil hanya 9 item untuk ditampilkan
+  const currentPosts = posts.slice(indexOfFirstItem, indexOfLastItem);
+  
+  // Hitung total halaman berdasarkan jumlah seluruh posts
+  const totalPages = Math.ceil(posts.length / itemsPerPage) || 1; 
 
   if (isLoading) return (
     <div className="flex h-screen items-center justify-center bg-pink-50">
@@ -20,8 +33,7 @@ function UserHome() {
   );
 
   return (
-    <div className="min-h-screen bg-[#FFF5F7]"> {/* Pink sangat muda untuk background */}
-      {/* Navbar Sederhana khusus User */}
+    <div className="min-h-screen bg-[#FFF5F7]">
       <nav className="bg-white border-b border-pink-100 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <h1 className="text-2xl font-black text-pink-500 tracking-tighter italic">DUNIA KARTUN</h1>
@@ -35,11 +47,10 @@ function UserHome() {
           <p className="text-pink-400/80 font-medium">Temukan fakta unik dan cerita menarik dari serial animasi favoritmu</p>
         </header>
 
-        {/* Grid Postingan */}
+        {/* Grid tampil 3x3 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-          {posts.map((post: any) => (
+          {currentPosts.map((post: any) => (
             <div key={post.id} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-pink-50 flex flex-col group">
-              {/* Gambar Post */}
               <div className="h-56 overflow-hidden relative">
                 <img 
                   src={post.gambar} 
@@ -57,11 +68,9 @@ function UserHome() {
                 <h3 className="font-bold text-2xl text-slate-800 mb-3 leading-tight group-hover:text-pink-500 transition-colors">
                   {post.judul}
                 </h3>
-                
                 <p className="text-slate-500 mb-6 line-clamp-3 leading-relaxed">
                   {post.isi}
                 </p>
-                
                 <div className="mt-auto pt-6 border-t border-pink-50 flex items-center justify-between">
                   <Link 
                     to={`/post/${post.id}`} 
@@ -77,10 +86,34 @@ function UserHome() {
           ))}
         </div>
 
-        {/* State Jika Kosong */}
-        {posts.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-pink-200">
-            <p className="text-pink-300 italic font-medium">Belum ada kiriman hari ini, ditunggu ya!</p>
+        {/* PAGINATION UI */}
+        {posts.length > 0 && (
+          <div className="mt-16 flex items-center justify-center gap-4">
+            <button 
+              disabled={currentPage === 1}
+              onClick={() => {
+                setCurrentPage(p => p - 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-6 py-3 bg-white border-2 border-pink-100 rounded-2xl text-pink-500 font-bold hover:bg-pink-50 disabled:opacity-30 transition-all shadow-sm"
+            >
+              ← Prev
+            </button>
+
+            <div className="bg-white px-6 py-3 rounded-2xl border-2 border-pink-100 text-pink-500 font-black shadow-sm">
+              {currentPage} / {totalPages}
+            </div>
+
+            <button 
+              disabled={currentPage >= totalPages}
+              onClick={() => {
+                setCurrentPage(p => p + 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-6 py-3 bg-white border-2 border-pink-100 rounded-2xl text-pink-500 font-bold hover:bg-pink-50 disabled:opacity-30 transition-all shadow-sm"
+            >
+              Next →
+            </button>
           </div>
         )}
       </main>

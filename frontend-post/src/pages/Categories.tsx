@@ -1,10 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { useCategories, useCreateCategory, useDeleteCategory } from "../hooks/useCategories";
 
 function Categories() {
   const [newCategory, setNewCategory] = useState("");
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
+  // --- PROTEKSI LOGIN ---
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    }
+  }, [navigate]);
+
   const { data: categoriesData, isLoading, isError } = useCategories();
   const createMutation = useCreateCategory();
   const deleteMutation = useDeleteCategory();
@@ -15,17 +26,25 @@ function Categories() {
     cat.nama?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // --- HANDLE ADD DENGAN VALIDASI & NOTIFIKASI BERHASIL ---
   const handleAdd = () => {
-    if (!newCategory.trim()) return;
+    // 1. Validasi Frontend (Cek input kosong)
+    if (!newCategory.trim()) {
+      alert("Ups! Nama kategori tidak boleh kosong, ya.");
+      return;
+    }
 
     createMutation.mutate(
-      { nama: newCategory } as any, 
+      { nama: newCategory } as any,
       {
         onSuccess: () => {
-          setNewCategory("");
+          setNewCategory(""); // Kosongkan input
+          alert("Kategori berhasil ditambahkan!"); // <-- NOTIFIKASI BERHASIL
         },
         onError: (error: any) => {
-          alert("Gagal menambah: " + (error.response?.data?.message || "Cek login/token"));
+          // 2. Read Validation Message dari Server/Swagger
+          const serverError = error.response?.data?.message || "Terjadi kesalahan server.";
+          alert("Gagal menambah: " + serverError);
         }
       }
     );
@@ -34,8 +53,12 @@ function Categories() {
   const handleDelete = (id: number) => {
     if (window.confirm("Yakin ingin menghapus kategori ini?")) {
       deleteMutation.mutate(id, {
+        onSuccess: () => {
+          alert("Kategori berhasil dihapus!");
+        },
         onError: (error: any) => {
-          alert("Gagal menghapus: " + (error.response?.data?.message || "Error server"));
+          const serverError = error.response?.data?.message || "Gagal menghapus.";
+          alert("Error: " + serverError);
         }
       });
     }
@@ -53,7 +76,7 @@ function Categories() {
   if (isError) return <div className="p-10 text-red-400 font-bold">Gagal memuat data.</div>;
 
   return (
-    <div className="flex min-h-screen bg-[#fff5f7]"> {/* Background Pink Sangat Soft */}
+    <div className="flex min-h-screen bg-[#fff5f7]">
       <Sidebar />
 
       <div className="flex-1 p-8">
@@ -64,7 +87,7 @@ function Categories() {
             <p className="text-pink-400 font-medium">Total: <span className="font-bold">{categories.length} Kategori</span> ditemukan.</p>
           </div>
           
-          {/* Search Bar Soft Pink */}
+          {/* Search Bar */}
           <div className="relative">
             <input 
               type="text" 
