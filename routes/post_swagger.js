@@ -1,15 +1,26 @@
 module.exports = {
   paths: {
-
-    // ==========================
-    // GET ALL & CREATE POST
-    // ==========================
     '/posts': {
-
       get: {
         tags: ['Posts'],
-        summary: 'Ambil semua post',
+        summary: 'Ambil semua post dengan pagination',
         security: [],
+        parameters: [
+          {
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 1 },
+            description: 'Nomor halaman yang ingin ditampilkan'
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', default: 9 },
+            description: 'Jumlah data per halaman'
+          }
+        ],
         responses: {
           200: {
             description: 'Berhasil mengambil data post'
@@ -29,59 +40,28 @@ module.exports = {
                 type: 'object',
                 required: ['judul', 'isi', 'gambar', 'category_id'],
                 properties: {
-
-                  judul: {
-                    type: 'string',
-                    example: 'Judul Post'
-                  },
-
-                  isi: {
-                    type: 'string',
-                    example: 'Isi Post'
-                  },
-
-                  category_id: {
-                    type: 'integer',
-                    example: 1
-                  },
-
-                  gambar: {
-                    type: 'string',
-                    format: 'binary'
-                  }
-
+                  judul: { type: 'string', example: 'Judul Post' },
+                  isi: { type: 'string', example: 'Isi Post' },
+                  category_id: { type: 'integer', example: 1 },
+                  gambar: { type: 'string', format: 'binary' }
                 }
               }
             }
           }
         },
         responses: {
-          201: {
-            description: 'Post berhasil dibuat'
-          }
+          201: { description: 'Post berhasil dibuat' }
         }
       }
     },
 
-
-    // ==========================
-    // UPDATE & DELETE POST
-    // ==========================
     '/posts/{id}': {
-
       put: {
         tags: ['Posts'],
         summary: 'Update post',
         security: [{ bearerAuth: [] }],
         parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: {
-              type: 'integer'
-            }
-          }
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
         ],
         requestBody: {
           required: true,
@@ -90,36 +70,17 @@ module.exports = {
               schema: {
                 type: 'object',
                 properties: {
-
-                  judul: {
-                    type: 'string',
-                    example: 'Judul baru'
-                  },
-
-                  isi: {
-                    type: 'string',
-                    example: 'Isi baru'
-                  },
-
-                  category_id: {
-                    type: 'integer',
-                    example: 1
-                  },
-
-                  gambar: {
-                    type: 'string',
-                    format: 'binary'
-                  }
-
+                  judul: { type: 'string', example: 'Judul baru' },
+                  isi: { type: 'string', example: 'Isi baru' },
+                  category_id: { type: 'integer', example: 1 },
+                  gambar: { type: 'string', format: 'binary' }
                 }
               }
             }
           }
         },
         responses: {
-          200: {
-            description: 'Post berhasil diupdate'
-          }
+          200: { description: 'Post berhasil diupdate' }
         }
       },
 
@@ -128,23 +89,12 @@ module.exports = {
         summary: 'Hapus post',
         security: [{ bearerAuth: [] }],
         parameters: [
-          {
-            name: 'id',
-            in: 'path',
-            required: true,
-            schema: {
-              type: 'integer'
-            }
-          }
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } }
         ],
         responses: {
-          200: {
-            description: 'Post berhasil dihapus'
-          }
+          200: { description: 'Post berhasil dihapus' }
         }
       }
-
     }
-
   }
 };

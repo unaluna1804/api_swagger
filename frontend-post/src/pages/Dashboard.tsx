@@ -5,18 +5,26 @@ import { useCategories } from "../hooks/useCategories";
 import Sidebar from "../components/Sidebar";
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const { data: postsData, isLoading, isError } = usePosts();
-  const { data: categoriesData } = useCategories();
-  
+  const navigate = useNavigate(); // TAMBAHKAN INI agar tidak error
+
+  // 1. Inisialisasi state halaman aktif
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 2. Ambil data Post & Kategori dari API
+  const { data: postsResponse, isLoading: loadingPosts, isError } = usePosts(currentPage);
+  const { data: categoriesResponse } = useCategories();
+
+  // 3. Ekstrak data (REVISI: Jangan deklarasi ulang variabel 'posts')
+  const posts = postsResponse?.data || [];
+  const totalPages = postsResponse?.last_page || 1;
+  const categories = categoriesResponse?.data || [];
+
+  // Mutations
   const deleteMutation = useDeletePost();
   const createMutation = useCreatePost();
   const updateMutation = useUpdatePost();
 
-  // Data dari database
-  const posts = postsData?.data || (Array.isArray(postsData) ? postsData : []);
-  const categories = categoriesData?.data || (Array.isArray(categoriesData) ? categoriesData : []);
-
+  // Modal & Form State
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [judul, setJudul] = useState("");
@@ -24,13 +32,18 @@ function Dashboard() {
   const [categoryId, setCategoryId] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
+  // Proteksi Route
   useEffect(() => {
     if (!localStorage.getItem("token")) navigate("/login");
   }, [navigate]);
 
   const handleSubmit = () => {
     if (!categoryId) return alert("Pilih kategori!");
-    const formData = { judul, isi, gambar: file, category_id: Number(categoryId) };
+    const formData = new FormData(); // Gunakan FormData untuk upload file
+    formData.append("judul", judul);
+    formData.append("isi", isi);
+    formData.append("category_id", categoryId);
+    if (file) formData.append("gambar", file);
 
     if (editId) {
       updateMutation.mutate({ id: editId, data: formData }, { onSuccess: () => setShowModal(false) });
@@ -39,21 +52,21 @@ function Dashboard() {
     }
   };
 
-  if (isLoading) return (
+  if (loadingPosts) return (
     <div className="flex h-screen items-center justify-center bg-pink-50">
       <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-pink-500"></div>
     </div>
   );
 
   return (
-    <div className="flex min-h-screen bg-[#FFF5F7]"> {/* Pink Soft Background */}
+    <div className="flex min-h-screen bg-[#FFF5F7]">
       <Sidebar />
       
       <div className="flex-1 p-6 lg:p-10">
         <header className="flex justify-between items-center mb-8 bg-white p-6 rounded-[2rem] shadow-sm border border-pink-100">
           <div>
             <h1 className="text-2xl font-black text-slate-800">Post Management</h1>
-            <p className="text-pink-400 text-sm font-medium">Data diambil langsung dari Database</p>
+            <p className="text-pink-400 text-sm font-medium">Halaman {currentPage} dari {totalPages}</p>
           </div>
           <button 
             onClick={() => { setEditId(null); setJudul(""); setIsi(""); setCategoryId(""); setShowModal(true); }} 
@@ -79,15 +92,10 @@ function Dashboard() {
                 <h3 className="font-bold text-xl text-slate-800 mb-2 leading-tight uppercase italic line-clamp-2">
                   {post.judul}
                 </h3>
-                
                 <p className="text-sm text-slate-500 mb-4 line-clamp-3 leading-relaxed">
                   {post.isi}
                 </p>
                 
-                <Link to={`/post/${post.id}`} className="text-pink-500 text-xs font-black uppercase tracking-widest hover:text-pink-700 mb-6 block transition-colors">
-                  PRATINJAU POST →
-                </Link>
-
                 <div className="flex gap-3 mt-auto pt-5 border-t border-pink-50">
                   <button 
                     onClick={() => { setEditId(post.id); setJudul(post.judul); setIsi(post.isi); setCategoryId(post.category_id); setShowModal(true); }} 
@@ -105,6 +113,25 @@ function Dashboard() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* --- TAMBAHKAN NAVIGASI PAGINATION DI SINI --- */}
+        <div className="mt-12 flex items-center justify-center gap-4">
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="px-6 py-2 bg-white border-2 border-pink-100 rounded-xl text-pink-500 font-bold disabled:opacity-30"
+          >
+            Prev
+          </button>
+          <span className="font-bold text-slate-700">{currentPage} / {totalPages}</span>
+          <button 
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="px-6 py-2 bg-white border-2 border-pink-100 rounded-xl text-pink-500 font-bold disabled:opacity-30"
+          >
+            Next
+          </button>
         </div>
       </div>
 
@@ -128,7 +155,7 @@ function Dashboard() {
                 <select 
                   value={categoryId} 
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-pink-50/30 border-pink-100 border-2 p-4 rounded-2xl outline-none focus:border-pink-500 focus:bg-white transition-all appearance-none"
+                  className="w-full bg-pink-50/30 border-pink-100 border-2 p-4 rounded-2xl outline-none focus:border-pink-500 focus:bg-white transition-all"
                 >
                   <option value="">-- Pilih Kategori --</option>
                   {categories.map((cat: any) => (
@@ -162,4 +189,5 @@ function Dashboard() {
     </div>
   );
 }
+
 export default Dashboard;
