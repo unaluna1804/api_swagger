@@ -3,19 +3,69 @@ import api from "../lib/api";
 
 const API_URL = "/posts";
 
-// --- PERBAIKAN: Tambahkan parameter 'page' di sini ---
-export const usePosts = (page: number = 1) => {
+// 1. Ambil Semua Data
+export const usePosts = (page: number = 1, search: string = "") => {
   return useQuery({
-    // Tambahkan page ke dalam queryKey agar data refresh otomatis saat ganti halaman
-    queryKey: ["posts", page], 
+    queryKey: ["posts", page, search], 
     queryFn: async () => {
-      // Menambahkan query parameter ?page= ke URL API
-      const res = await api.get(`${API_URL}?page=${page}`);
+      const res = await api.get(API_URL, {
+        params: { page, search }
+      });
       return res.data;
+    },
+    placeholderData: (previousData) => previousData,
+  });
+};
+
+// 2. Ambil SATU Data (Tanpa pecah array!)
+export const usePostById = (id: string | undefined) => {
+  return useQuery({
+    queryKey: ["post", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await api.get(`${API_URL}/${id}`);
+      // Menangani struktur response.success(res, item)
+      // Biasanya: { status: "success", data: { id: 48, judul: "..." } }
+      return res.data.data || res.data; 
+    },
+    enabled: !!id,
+    staleTime: 0, 
+    gcTime: 0,
+  });
+};
+
+// 3. Create Post
+export const useCreatePost = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      return await api.post(API_URL, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 };
 
+// 4. Update Post
+export const useUpdatePost = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
+      return await api.put(`${API_URL}/${id}`, data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["post", String(variables.id)] });
+    },
+  });
+};
+
+// 5. Delete Post
 export const useDeletePost = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -24,54 +74,7 @@ export const useDeletePost = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      alert("Terhapus!");
+      alert("Postingan berhasil dihapus!");
     },
-  });
-};
-
-export const useCreatePost = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (newPost: any) => {
-      const formData = new FormData();
-      formData.append("judul", newPost.judul);
-      formData.append("isi", newPost.isi);
-      formData.append("category_id", newPost.category_id);
-      formData.append("gambar", newPost.gambar); 
-      return await api.post(API_URL, formData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-    },
-    // TIPS: Tambahkan onError di sini untuk Read Validation Message di form tambah
-    onError: (error: any) => {
-      const msg = error.response?.data?.message || "Gagal membuat postingan";
-      alert(msg);
-    }
-  });
-};
-
-export const useUpdatePost = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const formData = new FormData();
-      formData.append("judul", data.judul);
-      formData.append("isi", data.isi);
-      formData.append("category_id", String(data.category_id)); 
-      
-      if (data.gambar instanceof File) {
-        formData.append("gambar", data.gambar);
-      }
-      return await api.put(`${API_URL}/${id}`, formData);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      alert("Berhasil update!");
-    },
-    onError: (error: any) => {
-      const msg = error.response?.data?.message || "Gagal update postingan";
-      alert(msg);
-    }
   });
 };

@@ -1,27 +1,38 @@
 const pool = require('../config/db');
 
-// Mengambil data dengan batasan limit dan titik mulai offset
-exports.getAll = (limit, offset) =>
-  pool.query(`
+// --- FITUR POST ---
+exports.getAll = (limit, offset, search = '') => {
+  const searchTerm = `%${search}%`;
+  return pool.query(`
     SELECT posts.*, categories.nama AS category_nama
     FROM posts
     LEFT JOIN categories ON posts.category_id = categories.id
+    WHERE posts.judul ILIKE $3 OR posts.isi ILIKE $3
     ORDER BY posts.id DESC
     LIMIT $1 OFFSET $2
-  `, [limit, offset]);
+  `, [limit, offset, searchTerm]);
+};
 
-// Menghitung total seluruh post untuk menentukan jumlah halaman di frontend
-exports.countAll = () => {
-    return pool.query('SELECT COUNT(*) FROM posts');
+exports.countAll = (search = '') => {
+  const searchTerm = `%${search}%`;
+  return pool.query(
+    'SELECT COUNT(*) FROM posts WHERE judul ILIKE $1 OR isi ILIKE $1', 
+    [searchTerm]
+  );
 };
 
 exports.getById = (id) => {
-    return pool.query('SELECT * FROM posts WHERE id = $1', [id]);
+  return pool.query(`
+    SELECT posts.*, categories.nama AS category_nama 
+    FROM posts 
+    LEFT JOIN categories ON posts.category_id = categories.id 
+    WHERE posts.id = $1
+  `, [id]);
 };
 
 exports.create = (judul, isi, gambar, category_id) => {
   return pool.query(
-    "INSERT INTO posts(judul, isi, gambar, category_id) VALUES($1,$2,$3,$4) RETURNING *",
+    "INSERT INTO posts(judul, isi, gambar, category_id, created_at) VALUES($1, $2, $3, $4, NOW()) RETURNING *",
     [judul, isi, gambar, category_id]
   );
 };

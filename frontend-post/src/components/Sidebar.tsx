@@ -1,76 +1,59 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, NavLink } from "react-router-dom";
 
-function Sidebar() {
+const Sidebar = () => {
   const navigate = useNavigate();
+  const namaAdmin = localStorage.getItem("nama") || "Admin";
 
   const handleLogout = () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      alert("Berhasil Logout!");
-      window.location.href = "/login"; 
-    }
+    // Bersihkan semua data
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("nama");
+    
+    alert("Pintu Dunia Kartun telah dikunci. Sampai jumpa! 🗝️");
+    navigate("/login");
   };
 
   return (
-    // Menggunakan Pink fuchsia tua yang sangat tegas
-    <div className="w-64 bg-pink-700 min-h-screen p-6 hidden md:block shadow-[10px_0_30px_-15px_rgba(0,0,0,0.3)]">
-      
-      {/* Judul Admin Panel dengan font tebal putih */}
-      <div className="mb-10 pb-6 border-b-4 border-pink-800">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter">
-          MENU <span className="text-pink-300">ADMIN</span>
-        </h2>
-        <p className="text-[10px] font-black text-pink-200 uppercase tracking-[0.3em] mt-1">Dunia Kartun</p>
-      </div>
-      
-      {/* Grup Menu Navigasi */}
-      <nav className="space-y-3">
-        
-        {/* Menu Dashboard */}
-        <Link 
-          to="/dashboard" 
-          className="flex items-center gap-4 text-white p-4 rounded-2xl hover:bg-white hover:text-pink-700 transition-all duration-300 font-black group shadow-lg hover:shadow-pink-900/50"
-        >
-          <span className="text-xl group-hover:scale-125 transition-transform">🏠</span>
-          <span className="text-sm uppercase">Dashboard</span>
-        </Link>
-        
-        {/* Menu Categories */}
-        <Link 
-          to="/categories" 
-          className="flex items-center gap-4 text-white p-4 rounded-2xl hover:bg-white hover:text-pink-700 transition-all duration-300 font-black group shadow-lg hover:shadow-pink-900/50"
-        >
-          <span className="text-xl group-hover:rotate-12 transition-transform">📂</span>
-          <span className="text-sm uppercase">Categories</span>
-        </Link>
-
-        {/* Separator Tebal */}
-        <div className="py-6">
-            <div className="h-1 bg-pink-800 rounded-full w-full"></div>
+    <aside className="w-72 bg-white min-h-screen flex flex-col p-8 border-r border-pink-100 shadow-sm sticky top-0 h-screen">
+      {/* Brand */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-black text-pink-500 italic tracking-tighter">DUNIA KARTUN</h2>
+        <div className="flex items-center gap-2 mt-2">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin Online: {namaAdmin}</p>
         </div>
+      </div>
 
-        {/* Menu Logout */}
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-4 text-pink-200 w-full p-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all duration-300 font-black group"
+      {/* Navigation */}
+      <nav className="flex-1 space-y-3">
+        <NavLink 
+          to="/dashboard" 
+          className={({isActive}) => `flex items-center gap-3 p-4 rounded-2xl font-bold transition-all duration-300 ${isActive ? 'bg-pink-500 text-white shadow-lg shadow-pink-200 translate-x-2' : 'text-slate-500 hover:bg-pink-50 hover:text-pink-500'}`}
         >
-          <span className="text-xl group-hover:translate-x-1 transition-transform">🚪</span>
-          <span className="text-sm uppercase">Logout</span>
-        </button>
-
+           <span className="text-xl">📊</span> Post Management
+        </NavLink>
+        
+        <NavLink 
+          to="/categories" 
+          className={({isActive}) => `flex items-center gap-3 p-4 rounded-2xl font-bold transition-all duration-300 ${isActive ? 'bg-pink-500 text-white shadow-lg shadow-pink-200 translate-x-2' : 'text-slate-500 hover:bg-pink-50 hover:text-pink-500'}`}
+        >
+           <span className="text-xl">📁</span> Categories
+        </NavLink>
       </nav>
 
-      {/* Footer Sidebar Solid */}
-      <div className="mt-20">
-          <div className="bg-pink-800/50 p-4 rounded-3xl border-2 border-pink-400 text-center">
-              <p className="text-[11px] font-black text-white tracking-widest uppercase">
-                Happy Working! 🚀
-              </p>
-          </div>
+      {/* Logout Button */}
+      <div className="pt-6 border-t border-pink-50">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-3 bg-red-50 text-red-500 p-4 rounded-2xl font-black hover:bg-red-500 hover:text-white transition-all duration-300 active:scale-95 group"
+        >
+          <span>LOGOUT</span>
+          <span className="group-hover:translate-x-1 transition-transform">➡️</span>
+        </button>
       </div>
-    </div>
+    </aside>
   );
-}
+};
 
 export default Sidebar;

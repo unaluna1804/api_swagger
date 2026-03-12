@@ -1,9 +1,10 @@
 const pool = require('../config/db');
 
-exports.createUser = (email, password) => {
+// 1. Tambahkan parameter 'role' di sini
+exports.createUser = (email, password, role) => {
     return pool.query(
-        'INSERT INTO users (email, password) VALUES ($1, $2)',
-        [email, password]
+        'INSERT INTO users (email, password, role) VALUES ($1, $2, $3)',
+        [email, password, role] // $3 adalah role (0 atau 1)
     );
 };
 

@@ -8,9 +8,15 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
 
 exports.register = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        // 1. Ambil role dari body, default 0 kalau gak diisi
+        const { email, password, role } = req.body;
+        const userRole = role !== undefined ? role : 0; 
+
         const hash = await argon2.hash(password);
-        await User.createUser(email, hash);
+        
+        // 2. Pastikan di model User.createUser, kamu juga nambahin parameter role
+        await User.createUser(email, hash, userRole); 
+        
         response.success(res, null, "User berhasil dibuat");
     } catch (err) {
         response.error(res, "Email sudah terdaftar");
@@ -24,25 +30,33 @@ exports.login = async (req, res) => {
     if (user.rows.length === 0)
         return response.error(res, "User tidak ditemukan", 404);
 
-    const valid = await argon2.verify(user.rows[0].password, password);
+    const userData = user.rows[0];
+
+    const valid = await argon2.verify(userData.password, password);
     if (!valid)
         return response.error(res, "Password salah", 401);
 
+    // 3. Masukkan role ke dalam payload JWT (PENTING!)
     const accessToken = jwt.sign(
-        { id: user.rows[0].id },
+        { id: userData.id, role: userData.role }, // Tambah role di sini
         ACCESS_TOKEN_SECRET,
         { expiresIn: '15m' }
     );
 
     const refreshToken = jwt.sign(
-        { id: user.rows[0].id },
+        { id: userData.id, role: userData.role }, // Tambah role di sini juga
         REFRESH_TOKEN_SECRET,
         { expiresIn: '7d' }
     );
 
-    await User.saveRefreshToken(refreshToken, user.rows[0].id);
+    await User.saveRefreshToken(refreshToken, userData.id);
 
-    response.success(res, { accessToken, refreshToken }, "Login berhasil");
+    // 4. Kirim role ke frontend agar bisa disimpan di localStorage
+    response.success(res, { 
+        accessToken, 
+        refreshToken, 
+        role: userData.role 
+    }, "Login berhasil");
 };
 
 exports.refreshToken = async (req, res) => {
@@ -58,8 +72,9 @@ exports.refreshToken = async (req, res) => {
         if (err)
             return response.error(res, "Token expired", 403);
 
+        // 5. Masukkan role kembali saat refresh token
         const accessToken = jwt.sign(
-            { id: decoded.id },
+            { id: decoded.id, role: decoded.role }, 
             ACCESS_TOKEN_SECRET,
             { expiresIn: '15m' }
         );
